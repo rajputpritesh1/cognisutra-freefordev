@@ -3,6 +3,7 @@
 > A curated database of **500+ free tier** SaaS, PaaS, and IaaS services for developers. No credit card. No nonsense.
 
 🌐 **Live Site:** [cognisutra.in](https://www.cognisutra.in)
+<img width="1919" height="912" alt="image" src="https://github.com/user-attachments/assets/12901e1c-b5dd-4cb7-8106-d2e110aee8f6" />
 
 ---
 

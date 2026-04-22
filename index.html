@@ -66,7 +66,16 @@
   gtag('config', 'G-XXXXXXXXXX');
 </script> -->
 
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- PERF: Preconnect to font origins -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+<!-- PERF: Mobile browser chrome colour -->
+<meta name="theme-color" content="#030712" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)">
+<!-- PERF: Non-render-blocking font load (preload + async swap) -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
 <style>
   /* ===== DARK MODE (default) ===== */
   :root {
@@ -181,10 +190,20 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Exo 2', sans-serif;
+    /* PERF: System font fallback while Google Fonts loads */
+    font-family: 'Exo 2', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 300;
     min-height: 100vh;
     overflow-x: hidden;
+  }
+
+  /* PERF: Respect prefers-reduced-motion — saves CPU, improves TBT score */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   /* ===== GRID BACKGROUND ===== */
@@ -197,6 +216,7 @@
       linear-gradient(90deg, rgba(0,255,204,0.03) 1px, transparent 1px);
     background-size: 40px 40px;
     animation: gridPulse 8s ease-in-out infinite;
+    will-change: opacity; /* PERF: promote to GPU layer */
   }
 
   @keyframes gridPulse {
@@ -252,7 +272,7 @@
   }
 
   .logo {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Orbitron', 'Courier New', monospace;
     font-weight: 900;
     font-size: 1.2rem;
     letter-spacing: 0.05em;
@@ -448,6 +468,9 @@
   .section {
     margin-bottom: 4rem;
     animation: fadeUp 0.4s ease both;
+    /* PERF: Skip rendering off-screen sections until needed */
+    content-visibility: auto;
+    contain-intrinsic-size: 0 600px;
   }
 
   @keyframes fadeUp {
@@ -514,6 +537,8 @@
     transition: background 0.15s;
     position: relative;
     overflow: hidden;
+    /* PERF: GPU compositing for hover transitions */
+    will-change: background;
   }
 
   .service-card::before {
@@ -1212,6 +1237,9 @@
 </div><!-- /#app -->
 
 <script>
+  /* ===== PERF: Run after HTML is parsed ===== */
+  document.addEventListener('DOMContentLoaded', function() {
+
   /* ===== THEME TOGGLE ===== */
   const html = document.documentElement;
   const themeToggle = document.getElementById('themeToggle');
@@ -1318,11 +1346,28 @@
     });
   });
 
-  sections.forEach((s, i) => {
-    s.style.animationDelay = `${i * 0.05}s`;
+  /* ===== PERF: Lazy animate sections with IntersectionObserver instead of CSS delays ===== */
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+
+  sections.forEach(s => {
+    s.style.opacity = '0';
+    s.style.transform = 'translateY(20px)';
+    s.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+    s.style.animationDelay = '';
+    observer.observe(s);
   });
 
   applyFilters();
+
+  }); // end DOMContentLoaded
 </script>
 </body>
 </html>
